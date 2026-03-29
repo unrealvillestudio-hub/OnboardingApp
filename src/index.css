@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base ──────────────────────────────────────────────────────────────── */
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background-color: #07070F;
+    color: #E8E8F5;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Selection */
+  ::selection {
+    background: rgba(0, 255, 209, 0.2);
+    color: #E8E8F5;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1E1E3A;
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2E2E5A;
+  }
+
+  /* Focus visible */
+  :focus-visible {
+    outline: 1px solid rgba(0, 255, 209, 0.5);
+    outline-offset: 2px;
+  }
+}
+
+/* ─── Components ────────────────────────────────────────────────────────── */
+
+@layer components {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #1E1E3A transparent;
+  }
+}
+
+/* ─── Utilities ─────────────────────────────────────────────────────────── */
+
+@layer utilities {
+  .font-display {
+    font-family: 'Syne', sans-serif;
+  }
+  .font-body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}

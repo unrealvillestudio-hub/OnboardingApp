@@ -374,6 +374,22 @@ function PhaseNav({
 import type { Dispatch } from 'react';
 import type { OnboardingPhase } from '@/types';
 
+// Internal re-export of the Action union so OnboardingView can be typed correctly
+type AppAction =
+  | { type: 'START_NEW'; brandId: string }
+  | { type: 'EDIT_EXISTING'; brandId: string }
+  | { type: 'SET_BRIEF'; brief: string }
+  | { type: 'SET_PHASE'; phase: OnboardingPhase }
+  | { type: 'SET_LOADING'; loading: boolean }
+  | { type: 'SET_ERROR'; error: string | null }
+  | { type: 'SET_STRUCTURED_CONTEXT'; ctx: import('@/types').StructuredBrandContext }
+  | { type: 'UPDATE_STRUCTURED_FIELD'; field: keyof import('@/types').StructuredBrandContext; value: unknown }
+  | { type: 'APPROVE_PHASE2' }
+  | { type: 'ADD_GAP_MESSAGE'; message: import('@/types').GapMessage }
+  | { type: 'MERGE_GAP_DATA'; data: Record<string, unknown> }
+  | { type: 'SET_WRITE_RESULT'; result: import('@/types').WriteResult }
+  | { type: 'RESET' };
+
 function OnboardingView({
   selectedBrand,
   currentPhase,
@@ -381,10 +397,8 @@ function OnboardingView({
 }: {
   selectedBrand: Brand | undefined;
   currentPhase: OnboardingPhase;
-  dispatch: Dispatch<{ type: 'SET_PHASE'; phase: OnboardingPhase } | { type: 'APPROVE_PHASE2' } | { type: string; [k: string]: unknown }>;
+  dispatch: Dispatch<AppAction>;
 }) {
-  const { session } = { session: { phase2Approved: false } }; // placeholder, will use hook in children
-
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}

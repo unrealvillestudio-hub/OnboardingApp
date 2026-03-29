@@ -133,16 +133,17 @@ export default function App() {
           <div className="flex items-center justify-between px-4 py-5 border-b border-border">
             {!sidebarCollapsed ? (
               <button onClick={handleBack} className="flex items-center gap-2.5 hover:opacity-75 transition-opacity" title="Dashboard">
-                <LogoMark />
                 <div>
                   <p className="font-display font-bold text-sm tracking-widest text-text uppercase leading-tight">
-                    UNREAL<span className="text-accent">&gt;</span>ILLE
+                    UNREAL<span className="text-accent animate-pulse-accent">&gt;</span>ILLE
                   </p>
                   <p className="text-[10px] text-muted font-mono tracking-wider">ONBOARDING</p>
                 </div>
               </button>
             ) : (
-              <button onClick={handleBack} title="Dashboard"><LogoMark /></button>
+              <button onClick={handleBack} title="Dashboard" className="flex items-center justify-center w-8 h-8">
+                <span className="font-display font-bold text-lg text-accent animate-pulse-accent leading-none">&gt;</span>
+              </button>
             )}
             <button
               onClick={() => setSidebarCollapsed((v) => !v)}
@@ -356,7 +357,7 @@ function WelcomeScreen({ onNewBrand, brandCount }: { onNewBrand: () => void; bra
         <div className="flex items-center justify-center gap-3 mb-6">
           <LogoMark size={40} />
           <h1 className="font-display font-bold text-4xl tracking-tight">
-            <span className="text-text">UNREAL</span><span className="text-accent">&gt;</span><span className="text-text">ILLE</span>
+            <span className="text-text">UNREAL</span><span className="text-accent animate-pulse-accent">&gt;</span><span className="text-text">ILLE</span>
             <span className="text-muted"> ·</span><span className="text-text"> Brand Onboarding</span>
           </h1>
         </div>
@@ -378,21 +379,5 @@ function WelcomeScreen({ onNewBrand, brandCount }: { onNewBrand: () => void; bra
         ))}
       </div>
     </div>
-  );
-}
-
-// ─── Logo Mark ───────────────────────────────────────────────────────────
-// Uses the actual UNREAL>ILLE chevron icon — brand_id: UnrealvilleStudio
-
-function LogoMark({ size = 28 }: { size?: number }) {
-  // Inline SVG recreation of the UNRLVL ">" chevron icon
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="7" fill="#000000" />
-      <path
-        d="M11 8 L29 20 L11 32 L15 32 L33 20 L15 8 Z"
-        fill="#00FFD1"
-      />
-    </svg>
   );
 }

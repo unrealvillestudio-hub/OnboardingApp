@@ -7,7 +7,7 @@ import { useOnboardingStore } from '@/store/onboardingStore';
 import { writeBrandToSupabase } from '@/lib/brandWriter';
 import type { TableWriteStatus } from '@/types';
 
-export default function Phase4Summary() {
+export default function Phase4Summary({ onWriteComplete }: { onWriteComplete?: () => void }) {
   const { session, dispatch } = useOnboardingStore();
   const [writing, setWriting] = useState(false);
 
@@ -26,6 +26,7 @@ export default function Phase4Summary() {
         session.gapData
       );
       dispatch({ type: 'SET_WRITE_RESULT', result: writeResult });
+      if (writeResult.success && onWriteComplete) onWriteComplete();
     } catch (err) {
       dispatch({ type: 'SET_ERROR', error: String(err) });
     } finally {

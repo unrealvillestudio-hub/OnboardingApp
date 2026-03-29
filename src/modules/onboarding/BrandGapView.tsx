@@ -53,6 +53,7 @@ export default function BrandGapView({ brand, completeness, onBack, onGenerateCo
 
   const [summaryState, setSummaryState] = useState<SummaryState>('idle');
   const [summaryText, setSummaryText] = useState('');
+  const [summaryError, setSummaryError] = useState('');
   const [contextValidation, setContextValidation] = useState<ContextValidation>('pending');
 
   const [generateState, setGenerateState] = useState<GenerateState>('idle');
@@ -89,6 +90,8 @@ export default function BrandGapView({ brand, completeness, onBack, onGenerateCo
       setSummaryText(text);
       setSummaryState('done');
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setSummaryError(msg);
       setSummaryState('error');
     }
   }
@@ -216,9 +219,9 @@ export default function BrandGapView({ brand, completeness, onBack, onGenerateCo
 
             {/* Error */}
             {summaryState === 'error' && (
-              <div className="px-5 py-4 flex items-center justify-between">
-                <span className="text-xs text-error font-mono">Error al generar resumen</span>
-                <button onClick={handleGenerateSummary} className="text-xs text-muted hover:text-text font-mono">Reintentar</button>
+              <div className="px-5 py-4 flex flex-col gap-2">
+                <p className="text-xs text-error font-mono">{summaryError || 'Error al generar resumen'}</p>
+                <button onClick={handleGenerateSummary} className="self-start text-xs text-muted hover:text-text font-mono underline">Reintentar</button>
               </div>
             )}
 

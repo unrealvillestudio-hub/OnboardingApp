@@ -355,7 +355,6 @@ function WelcomeScreen({ onNewBrand, brandCount }: { onNewBrand: () => void; bra
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `linear-gradient(rgba(0,255,209,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,209,1) 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
       <div className="text-center animate-fade-in relative z-10">
         <div className="flex items-center justify-center gap-3 mb-6">
-          <span className="font-display font-bold text-5xl text-accent animate-pulse-accent leading-none">&gt;</span>
           <h1 className="font-display font-bold text-4xl tracking-tight">
             <span className="text-text">UNREAL</span><span className="text-accent animate-pulse-accent">&gt;</span><span className="text-text">ILLE</span>
             <span className="text-muted"> ·</span><span className="text-text"> Brand Onboarding</span>

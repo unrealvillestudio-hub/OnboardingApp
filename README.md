@@ -1,4 +1,4 @@
-# UNRLVL Onboarding App
+# UNRLVL - Onboarding App
 
 AI-powered brand onboarding → Supabase data pipeline.
 

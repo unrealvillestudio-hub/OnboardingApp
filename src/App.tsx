@@ -1,10 +1,11 @@
 /**
  * App.tsx — UNRLVL Brand Onboarding App
+ * v1.1 — ChatPanel integrado como drawer derecho persistente
  *
  * Views:
- *   'welcome'   — initial screen
- *   'brand-gap' — existing brand: gap analysis + Claude generate option
- *   'onboarding'— 4-phase flow (new brand or post-generate review)
+ *   'welcome'   → initial screen
+ *   'brand-gap' → existing brand: gap analysis + Claude generate option
+ *   'onboarding'→ 4-phase flow (new brand or post-generate review)
  */
 
 import { useState, useEffect } from 'react';
@@ -15,6 +16,7 @@ import {
   fetchHumanizeProfileCounts,
   fetchPaletteCounts,
   fetchTypographyCounts,
+  sbFetch,
 } from '@/lib/supabaseClient';
 import {
   OnboardingStoreContext,
@@ -26,8 +28,9 @@ import Phase2Enrichment from '@/modules/onboarding/Phase2Enrichment';
 import Phase3Gaps from '@/modules/onboarding/Phase3Gaps';
 import Phase4Summary from '@/modules/onboarding/Phase4Summary';
 import BrandGapView from '@/modules/onboarding/BrandGapView';
+import ChatPanel from '@/modules/onboarding/ChatPanel';
 
-// ─── Types ────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────
 
 type ActiveView = 'welcome' | 'brand-gap' | 'onboarding';
 
@@ -44,7 +47,11 @@ type AppAction =
   | { type: 'ADD_GAP_MESSAGE'; message: import('@/types').GapMessage }
   | { type: 'MERGE_GAP_DATA'; data: Record<string, unknown> }
   | { type: 'SET_WRITE_RESULT'; result: import('@/types').WriteResult }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  | { type: 'TOGGLE_CHAT' }
+  | { type: 'SET_CHAT_OPEN'; open: boolean }
+  | { type: 'ADD_CHAT_MESSAGE'; message: import('@/store/onboardingStore').ChatMessage }
+  | { type: 'CLEAR_CHAT' };
 
 const PHASES = [
   { num: 1, label: 'Brief', desc: 'Free narrative' },
@@ -53,7 +60,24 @@ const PHASES = [
   { num: 4, label: 'Write', desc: 'Save to DB' },
 ] as const;
 
-// ─── App ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+// Load full brand context from Supabase for ChatPanel
+async function loadBrandContext(brandId: string): Promise<string> {
+  try {
+    const [humanize, goals, personas] = await Promise.all([
+      sbFetch(`humanize_profiles?brand_id=eq.${brandId}&select=medium,tone,personality,sentence_style,vocabulary_include,vocabulary_exclude`).catch(() => []),
+      sbFetch(`brand_goals?brand_id=eq.${brandId}&select=horizon,category,goal,kpi,target,status`).catch(() => []),
+      sbFetch(`brand_personas?brand_id=eq.${brandId}&select=persona_key,label,segment_type,priority,pain_points,motivations,channels,data_source,confidence`).catch(() => []),
+    ]);
+
+    return JSON.stringify({ humanize, goals, personas }, null, 2);
+  } catch {
+    return '{}';
+  }
+}
+
+// ── App ───────────────────────────────────────────────────────────────────
 
 export default function App() {
   const [session, dispatch] = createOnboardingStore();
@@ -64,6 +88,7 @@ export default function App() {
   const [sidebarError, setSidebarError] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeView, setActiveView] = useState<ActiveView>('welcome');
+  const [brandContext, setBrandContext] = useState<string | null>(null);
 
   async function loadBrands() {
     setSidebarLoading(true);
@@ -94,6 +119,16 @@ export default function App() {
 
   useEffect(() => { loadBrands(); }, []);
 
+  // Load brand context for ChatPanel when brand changes
+  useEffect(() => {
+    if (session.targetBrandId) {
+      setBrandContext(null);
+      loadBrandContext(session.targetBrandId).then(setBrandContext);
+    } else {
+      setBrandContext(null);
+    }
+  }, [session.targetBrandId]);
+
   function handleSelectBrand(brandId: string) {
     dispatch({ type: 'EDIT_EXISTING', brandId });
     setActiveView('brand-gap');
@@ -116,17 +151,19 @@ export default function App() {
   }
 
   function handleWriteComplete() {
-    loadBrands(); // refresh completeness after write
+    loadBrands();
   }
 
   const selectedBrand = brands.find((b) => b.id === session.targetBrandId);
   const selectedCompleteness = selectedBrand ? completeness[selectedBrand.id] : undefined;
 
+  const isChatOpen = session.isChatOpen;
+
   return (
     <OnboardingStoreContext.Provider value={{ session, dispatch }}>
       <div className="flex h-screen bg-bg text-text font-body overflow-hidden">
 
-        {/* ── Sidebar ─────────────────────────────────────────────────── */}
+        {/* ── Sidebar ───────────────────────────────────────────────────── */}
         <aside className={`flex flex-col border-r border-border bg-surface transition-all duration-300 shrink-0 ${sidebarCollapsed ? 'w-16' : 'w-72'}`}>
 
           {/* Logo */}
@@ -202,36 +239,89 @@ export default function App() {
           )}
         </aside>
 
-        {/* ── Main ────────────────────────────────────────────────────── */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          {activeView === 'welcome' && (
-            <WelcomeScreen onNewBrand={handleNewBrand} brandCount={brands.length} />
+        {/* ── Main + ChatPanel ──────────────────────────────────────────── */}
+        <div className="flex-1 flex overflow-hidden relative">
+
+          {/* Main content */}
+          <main className={`flex flex-col overflow-hidden transition-all duration-300 ${isChatOpen ? 'flex-1' : 'flex-1'}`}>
+            {activeView === 'welcome' && (
+              <WelcomeScreen onNewBrand={handleNewBrand} brandCount={brands.length} />
+            )}
+            {activeView === 'brand-gap' && selectedBrand && (
+              <BrandGapView
+                brand={selectedBrand}
+                completeness={selectedCompleteness}
+                onBack={handleBack}
+                onGenerateComplete={handleGapGenerateComplete}
+                onSkipToPhase1={() => { dispatch({ type: 'SET_PHASE', phase: 1 }); setActiveView('onboarding'); }}
+              />
+            )}
+            {activeView === 'onboarding' && (
+              <OnboardingView
+                selectedBrand={selectedBrand}
+                currentPhase={session.currentPhase}
+                dispatch={dispatch as Dispatch<AppAction>}
+                onBack={handleBack}
+                onWriteComplete={handleWriteComplete}
+              />
+            )}
+          </main>
+
+          {/* Chat toggle button — floating, siempre visible */}
+          <button
+            onClick={() => dispatch({ type: 'TOGGLE_CHAT' })}
+            title={isChatOpen ? 'Cerrar chat Claude' : 'Abrir chat Claude'}
+            className={`
+              absolute bottom-5 right-5 z-50
+              flex items-center gap-2 px-4 py-2.5 rounded-full
+              border transition-all duration-200 shadow-lg
+              font-mono text-[11px] tracking-widest uppercase
+              ${isChatOpen
+                ? 'bg-surface border-accent/40 text-accent hover:bg-s2'
+                : 'bg-accent text-bg border-transparent hover:bg-accent/90 shadow-accent/20'
+              }
+            `}
+          >
+            {isChatOpen ? (
+              <>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                Cerrar chat
+              </>
+            ) : (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-bg animate-pulse" />
+                Claude
+              </>
+            )}
+          </button>
+
+          {/* Chat panel — drawer derecho */}
+          {isChatOpen && (
+            <div className="w-[380px] shrink-0 border-l border-border bg-surface flex flex-col overflow-hidden">
+              <ChatPanel
+                isOpen={isChatOpen}
+                onClose={() => dispatch({ type: 'SET_CHAT_OPEN', open: false })}
+                brandContext={selectedBrand
+                  ? JSON.stringify({
+                      brand: selectedBrand,
+                      extra: brandContext ? JSON.parse(brandContext) : {},
+                    }, null, 2)
+                  : null
+                }
+                brandName={selectedBrand?.display_name ?? null}
+              />
+            </div>
           )}
-          {activeView === 'brand-gap' && selectedBrand && (
-            <BrandGapView
-              brand={selectedBrand}
-              completeness={selectedCompleteness}
-              onBack={handleBack}
-              onGenerateComplete={handleGapGenerateComplete}
-              onSkipToPhase1={() => { dispatch({ type: 'SET_PHASE', phase: 1 }); setActiveView('onboarding'); }}
-            />
-          )}
-          {activeView === 'onboarding' && (
-            <OnboardingView
-              selectedBrand={selectedBrand}
-              currentPhase={session.currentPhase}
-              dispatch={dispatch as Dispatch<AppAction>}
-              onBack={handleBack}
-              onWriteComplete={handleWriteComplete}
-            />
-          )}
-        </main>
+        </div>
+
       </div>
     </OnboardingStoreContext.Provider>
   );
 }
 
-// ─── Brand Row ────────────────────────────────────────────────────────────
+// ── Brand Row ─────────────────────────────────────────────────────────────
 
 function BrandRow({ brand, completeness, isActive, collapsed, onClick }: {
   brand: Brand; completeness: BrandCompleteness | undefined;
@@ -273,7 +363,7 @@ function BrandRow({ brand, completeness, isActive, collapsed, onClick }: {
   );
 }
 
-// ─── Phase Nav ────────────────────────────────────────────────────────────
+// ── Phase Nav ─────────────────────────────────────────────────────────────
 
 function PhaseNav({ currentPhase, onNavigate, phase2Approved }: {
   currentPhase: number; onNavigate: (p: 1|2|3|4) => void; phase2Approved: boolean;
@@ -302,7 +392,7 @@ function PhaseNav({ currentPhase, onNavigate, phase2Approved }: {
   );
 }
 
-// ─── Onboarding View ──────────────────────────────────────────────────────
+// ── Onboarding View ───────────────────────────────────────────────────────
 
 function OnboardingView({ selectedBrand, currentPhase, dispatch, onBack, onWriteComplete }: {
   selectedBrand: Brand | undefined; currentPhase: OnboardingPhase;
@@ -310,7 +400,6 @@ function OnboardingView({ selectedBrand, currentPhase, dispatch, onBack, onWrite
 }) {
   return (
     <div className="flex flex-col h-full">
-      {/* Top bar */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-surface shrink-0">
         <div className="flex items-center gap-3">
           <button onClick={onBack}
@@ -347,7 +436,7 @@ function OnboardingView({ selectedBrand, currentPhase, dispatch, onBack, onWrite
   );
 }
 
-// ─── Welcome Screen ──────────────────────────────────────────────────────
+// ── Welcome Screen ────────────────────────────────────────────────────────
 
 function WelcomeScreen({ onNewBrand, brandCount }: { onNewBrand: () => void; brandCount: number }) {
   return (

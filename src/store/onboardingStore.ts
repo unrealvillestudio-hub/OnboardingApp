@@ -2,6 +2,7 @@
  * onboardingStore.ts
  * Central state for an active onboarding session.
  * Uses React Context + useReducer — no external deps.
+ * v1.1 — added chatMessages + isChatOpen for ChatPanel
  */
 
 import { createContext, useContext, useReducer, type Dispatch } from 'react';
@@ -13,9 +14,21 @@ import type {
   WriteResult,
 } from '@/types';
 
-// ─── Initial State ─────────────────────────────────────────────────────────
+// ── Chat Message type ─────────────────────────────────────────────────────
 
-const initialSession: OnboardingSession = {
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  ts: number;
+}
+
+// ── Initial State ─────────────────────────────────────────────────────────
+
+const initialSession: OnboardingSession & {
+  chatMessages: ChatMessage[];
+  isChatOpen: boolean;
+} = {
   targetBrandId: null,
   isNewBrand: false,
   freeBrief: '',
@@ -27,9 +40,11 @@ const initialSession: OnboardingSession = {
   currentPhase: 1,
   isLoading: false,
   error: null,
+  chatMessages: [],
+  isChatOpen: false,
 };
 
-// ─── Actions ──────────────────────────────────────────────────────────────
+// ── Actions ───────────────────────────────────────────────────────────────
 
 type Action =
   | { type: 'START_NEW'; brandId: string }
@@ -44,17 +59,31 @@ type Action =
   | { type: 'ADD_GAP_MESSAGE'; message: GapMessage }
   | { type: 'MERGE_GAP_DATA'; data: Record<string, unknown> }
   | { type: 'SET_WRITE_RESULT'; result: WriteResult }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  // Chat actions
+  | { type: 'TOGGLE_CHAT' }
+  | { type: 'SET_CHAT_OPEN'; open: boolean }
+  | { type: 'ADD_CHAT_MESSAGE'; message: ChatMessage }
+  | { type: 'CLEAR_CHAT' };
 
-// ─── Reducer ──────────────────────────────────────────────────────────────
+// ── Reducer ───────────────────────────────────────────────────────────────
 
-function reducer(state: OnboardingSession, action: Action): OnboardingSession {
+type FullSession = typeof initialSession;
+
+function reducer(state: FullSession, action: Action): FullSession {
   switch (action.type) {
     case 'START_NEW':
       return { ...initialSession, targetBrandId: action.brandId, isNewBrand: true };
 
     case 'EDIT_EXISTING':
-      return { ...initialSession, targetBrandId: action.brandId, isNewBrand: false };
+      return {
+        ...initialSession,
+        targetBrandId: action.brandId,
+        isNewBrand: false,
+        // Preserve chat state when switching brands
+        isChatOpen: state.isChatOpen,
+        chatMessages: [],
+      };
 
     case 'SET_BRIEF':
       return { ...state, freeBrief: action.brief };
@@ -94,23 +123,36 @@ function reducer(state: OnboardingSession, action: Action): OnboardingSession {
       return { ...state, writeResult: action.result, isLoading: false };
 
     case 'RESET':
-      return initialSession;
+      return { ...initialSession, isChatOpen: state.isChatOpen };
+
+    // Chat
+    case 'TOGGLE_CHAT':
+      return { ...state, isChatOpen: !state.isChatOpen };
+
+    case 'SET_CHAT_OPEN':
+      return { ...state, isChatOpen: action.open };
+
+    case 'ADD_CHAT_MESSAGE':
+      return { ...state, chatMessages: [...state.chatMessages, action.message] };
+
+    case 'CLEAR_CHAT':
+      return { ...state, chatMessages: [] };
 
     default:
       return state;
   }
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────
+// ── Context ───────────────────────────────────────────────────────────────
 
 interface StoreContextValue {
-  session: OnboardingSession;
+  session: FullSession;
   dispatch: Dispatch<Action>;
 }
 
 export const OnboardingStoreContext = createContext<StoreContextValue | null>(null);
 
-export function createOnboardingStore(): [OnboardingSession, Dispatch<Action>] {
+export function createOnboardingStore(): [FullSession, Dispatch<Action>] {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   return useReducer(reducer, initialSession);
 }
@@ -121,11 +163,10 @@ export function useOnboardingStore(): StoreContextValue {
   return ctx;
 }
 
-// ─── Completeness Calculator ──────────────────────────────────────────────
+// ── Completeness Calculator ───────────────────────────────────────────────
 
 import type { Brand, BrandCompleteness } from '@/types';
 
-/** Fields from the brands table that constitute "complete" */
 const COMPLETENESS_FIELDS: Array<keyof Brand> = [
   'brand_context',
   'brand_story',
@@ -164,7 +205,6 @@ export function computeCompleteness(
     }
   }
 
-  // Cross-table checks (each worth 1 point)
   const extras = [
     { name: 'humanize_profiles', count: extraCounts.humanize },
     { name: 'brand_palette', count: extraCounts.palette },

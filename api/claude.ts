@@ -1,53 +1,88 @@
 /**
- * api/claude.ts — Vercel serverless function
- * Proxies POST /api/claude → Anthropic /v1/messages
- * Keeps ANTHROPIC_API_KEY server-side only.
+ * src/api/claude.ts — UNRLVL Onboarding App
+ * Client-side wrapper for /api/claude proxy.
+ * callClaudeJSON  → structured JSON responses (Phases 1-4)
+ * callClaude      → plain text responses (ChatPanel)
  */
 
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+const ENDPOINT = '/api/claude';
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const MODEL = 'claude-sonnet-4-20250514';
+interface ClaudeRequest {
+  system?: string;
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  max_tokens?: number;
+  temperature?: number;
+}
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+// ── callClaudeJSON ─────────────────────────────────────────────────────────
+// Returns parsed JSON. Used in Phase2Enrichment, Phase3Gaps, BrandGapView.
+
+export async function callClaudeJSON<T = unknown>(req: ClaudeRequest): Promise<T> {
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      system: req.system,
+      messages: req.messages,
+      max_tokens: req.max_tokens ?? 4096,
+      temperature: req.temperature ?? 0.5,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Claude API error ${res.status}: ${text}`);
   }
 
-  if (!ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
-  }
+  const data = await res.json();
 
-  const { system, messages, max_tokens = 4096, temperature = 0.7 } = req.body;
+  // Extract text content from response
+  const raw: string =
+    data?.content?.[0]?.text ??
+    data?.text ??
+    data?.message ??
+    JSON.stringify(data);
+
+  // Strip markdown code fences if present
+  const clean = raw
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
 
   try {
-    const body: Record<string, unknown> = {
-      model: MODEL,
-      max_tokens,
-      temperature,
-      messages,
-    };
-    if (system) body.system = system;
-
-    const upstream = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!upstream.ok) {
-      const err = await upstream.text();
-      return res.status(upstream.status).json({ error: err });
-    }
-
-    const data = await upstream.json();
-    return res.status(200).json(data);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return res.status(500).json({ error: message });
+    return JSON.parse(clean) as T;
+  } catch {
+    throw new Error(`Failed to parse Claude response as JSON: ${clean.slice(0, 200)}`);
   }
+}
+
+// ── callClaude ─────────────────────────────────────────────────────────────
+// Returns plain text string. Used in ChatPanel.
+
+export async function callClaude(req: ClaudeRequest): Promise<string> {
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      system: req.system,
+      messages: req.messages,
+      max_tokens: req.max_tokens ?? 2048,
+      temperature: req.temperature ?? 0.7,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Claude API error ${res.status}: ${text}`);
+  }
+
+  const data = await res.json();
+
+  return (
+    data?.content?.[0]?.text ??
+    data?.text ??
+    data?.message ??
+    'Sin respuesta.'
+  );
 }

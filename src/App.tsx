@@ -16,7 +16,6 @@ import {
   fetchHumanizeProfileCounts,
   fetchPaletteCounts,
   fetchTypographyCounts,
-  sbFetch,
 } from '@/lib/supabaseClient';
 import {
   OnboardingStoreContext,
@@ -62,15 +61,18 @@ const PHASES = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-// Load full brand context from Supabase for ChatPanel
+// Load full brand context from Supabase for ChatPanel (fetch nativo)
 async function loadBrandContext(brandId: string): Promise<string> {
+  const base = import.meta.env.VITE_SUPABASE_URL;
+  const key  = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!base || !key) return '{}';
+  const h = { 'apikey': key, 'Authorization': `Bearer ${key}` };
   try {
     const [humanize, goals, personas] = await Promise.all([
-      sbFetch(`humanize_profiles?brand_id=eq.${brandId}&select=medium,tone,personality,sentence_style,vocabulary_include,vocabulary_exclude`).catch(() => []),
-      sbFetch(`brand_goals?brand_id=eq.${brandId}&select=horizon,category,goal,kpi,target,status`).catch(() => []),
-      sbFetch(`brand_personas?brand_id=eq.${brandId}&select=persona_key,label,segment_type,priority,pain_points,motivations,channels,data_source,confidence`).catch(() => []),
+      fetch(`${base}/rest/v1/humanize_profiles?brand_id=eq.${brandId}&select=medium,tone,personality,sentence_style`, { headers: h }).then(r => r.json()).catch(() => []),
+      fetch(`${base}/rest/v1/brand_goals?brand_id=eq.${brandId}&select=horizon,category,goal,kpi,target,status`, { headers: h }).then(r => r.json()).catch(() => []),
+      fetch(`${base}/rest/v1/brand_personas?brand_id=eq.${brandId}&select=persona_key,label,segment_type,priority,pain_points,motivations,channels,confidence`, { headers: h }).then(r => r.json()).catch(() => []),
     ]);
-
     return JSON.stringify({ humanize, goals, personas }, null, 2);
   } catch {
     return '{}';

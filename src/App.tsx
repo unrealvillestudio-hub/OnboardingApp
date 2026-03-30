@@ -185,6 +185,15 @@ export default function App() {
               </button>
             )}
             <button
+              onClick={() => dispatch({ type: 'TOGGLE_CHAT' })}
+              title={isChatOpen ? 'Cerrar chat Claude' : 'Abrir chat Claude'}
+              className={`p-1 rounded transition-colors mr-1 ${isChatOpen ? 'text-accent' : 'text-muted hover:text-accent'}`}
+            >
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <path d="M2 3h11a1 1 0 011 1v6a1 1 0 01-1 1H8l-3 2v-2H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <button
               onClick={() => setSidebarCollapsed((v) => !v)}
               className="text-muted hover:text-text transition-colors p-1 rounded ml-auto"
             >
@@ -268,36 +277,6 @@ export default function App() {
               />
             )}
           </main>
-
-          {/* Chat toggle button — floating, siempre visible */}
-          <button
-            onClick={() => dispatch({ type: 'TOGGLE_CHAT' })}
-            title={isChatOpen ? 'Cerrar chat Claude' : 'Abrir chat Claude'}
-            className={`
-              absolute bottom-5 right-5 z-50
-              flex items-center gap-2 px-4 py-2.5 rounded-full
-              border transition-all duration-200 shadow-lg
-              font-mono text-[11px] tracking-widest uppercase
-              ${isChatOpen
-                ? 'bg-surface border-accent/40 text-accent hover:bg-s2'
-                : 'bg-accent text-bg border-transparent hover:bg-accent/90 shadow-accent/20'
-              }
-            `}
-          >
-            {isChatOpen ? (
-              <>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-                Cerrar chat
-              </>
-            ) : (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full bg-bg animate-pulse" />
-                Claude
-              </>
-            )}
-          </button>
 
           {/* Chat panel — drawer derecho */}
           {isChatOpen && (

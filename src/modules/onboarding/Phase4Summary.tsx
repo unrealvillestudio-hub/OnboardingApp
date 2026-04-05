@@ -183,13 +183,31 @@ function PreWriteChecklist({
       fields: [],
       ready: !!ctx.typography_suggestion,
     },
+    {
+      name: 'brand_goals',
+      fields: [],
+      ready: (ctx.brand_goals?.length ?? 0) > 0,
+      count: ctx.brand_goals?.length,
+    },
+    {
+      name: 'brand_personas',
+      fields: [],
+      ready: (ctx.brand_personas?.length ?? 0) > 0,
+      count: ctx.brand_personas?.length,
+    },
+    {
+      name: 'geomix',
+      fields: [],
+      ready: (ctx.geomix?.length ?? 0) > 0,
+      count: ctx.geomix?.length,
+    },
   ];
 
   return (
     <div className="flex flex-col gap-3">
       <h2 className="font-display font-bold text-lg text-text">Listo para escribir</h2>
       <p className="text-sm text-muted">
-        Los siguientes datos serán escritos a Supabase vía UPSERT:
+        Los siguientes datos serán escritos a Supabase vía UPSERT (8 tablas):
       </p>
 
       {tables.map((t) => (

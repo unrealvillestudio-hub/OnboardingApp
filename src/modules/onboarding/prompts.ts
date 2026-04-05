@@ -87,6 +87,62 @@ Tu tarea: analizar un brief narrativo libre y generar un contexto de marca compl
     "mono_font": "nombre del font (opcional)"
   },
   
+  
+  "brand_goals": [
+    {
+      "horizon": "short | mid | long",
+      "category": "ventas | awareness | retention | engagement | comunidad",
+      "goal": "objetivo específico y accionable",
+      "kpi": "métrica principal para medir el objetivo",
+      "target": "valor o rango objetivo del KPI",
+      "priority": 1,
+      "notes": "contexto adicional si es relevante (opcional)"
+    }
+    // Genera 3-5 goals. Al menos 1 short, 1 mid, 1 long horizon.
+  ],
+  
+  "brand_personas": [
+    {
+      "persona_key": "identificador único snake_case, ej: miami_professional_f35",
+      "label": "nombre descriptivo del segmento, ej: Profesional Miami 35-45",
+      "segment_type": "primary | secondary | aspirational",
+      "priority": 1,
+      "age_range": "ej: 28-40",
+      "gender": "F | M | mixed",
+      "location": "ciudad/región principal del segmento",
+      "language": "idioma principal del segmento",
+      "income_level": "low | mid | high | ultra-high",
+      "pain_points": ["dolor 1", "dolor 2", "dolor 3"],
+      "motivations": ["motivación 1", "motivación 2"],
+      "objections": ["objeción 1", "objeción 2"],
+      "values": ["valor 1", "valor 2"],
+      "channels": ["instagram", "tiktok", "email"],
+      "buying_trigger": "qué hace que este segmento compre",
+      "tone_for_segment": "cómo hablarle específicamente a este segmento",
+      "copy_hooks": ["hook 1 que resuena con este segmento", "hook 2"],
+      "avoid": ["qué evitar con este segmento"],
+      "confidence": 80,
+      "notes": "contexto adicional (opcional)"
+    }
+    // Genera 2-4 personas. Empezar por el segmento primario más rentable.
+  ],
+  
+  "geomix": [
+    {
+      "geo": "identificador del mercado geográfico, ej: miami_fl_usa",
+      "country": "código ISO, ej: US",
+      "region": "estado/provincia, ej: Florida",
+      "city": "ciudad principal, ej: Miami",
+      "language": "idioma dominante del mercado",
+      "lighting": "descripción del lighting visual típico del mercado para ImageLab",
+      "color_mood": "paleta de mood del mercado, ej: warm tropical, urban cool",
+      "aesthetic": "estética visual dominante, ej: miami_luxury, caribbean_natural",
+      "local_slang": ["expresión local 1", "expresión local 2"],
+      "avoid_slang": ["expresión a evitar 1"],
+      "cultural_refs": ["referencia cultural relevante 1", "referencia 2"]
+    }
+    // Genera 1-3 geos según los mercados de la marca.
+  ],
   "detected_industry": "string — industria detectada",
   "applied_compliance_framework": "string — framework aplicado: FDA/FTC | INVIMA | COFEPRIS | EU_Cosmetics | Legal_PA | General",
   
@@ -95,6 +151,9 @@ Tu tarea: analizar un brief narrativo libre y generar un contexto de marca compl
     "icp": "cómo derivaste este perfil del brief",
     "tono_base": "qué señales del brief determinaron el tono",
     "diferenciador_base": "qué hace única a esta marca según el brief",
+    "brand_goals": "cómo inferiste los objetivos del brief",
+    "brand_personas": "de dónde vienen estos segmentos según el brief",
+    "geomix": "cómo determinaste los mercados geográficos",
     "applied_compliance_framework": "por qué aplicaste este framework"
   }
 }

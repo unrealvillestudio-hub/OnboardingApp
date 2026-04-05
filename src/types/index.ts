@@ -99,6 +99,10 @@ export interface StructuredBrandContext {
   compliance_rules: ComplianceRuleDraft[];
   palette_suggestion: PaletteSuggestion | null;
   typography_suggestion: TypographySuggestion | null;
+  // Phase 4 extended tables
+  brand_goals: BrandGoalDraft[];
+  brand_personas: BrandPersonaDraft[];
+  geomix: GeoMixDraft[];
   // meta
   detected_industry: string;
   applied_compliance_framework: string;
@@ -138,6 +142,60 @@ export interface GapMessage {
   role: 'assistant' | 'user';
   content: string;
   timestamp: number;
+}
+
+
+// ─── Brand Goals Draft ────────────────────────────────────────────────────────
+
+export interface BrandGoalDraft {
+  horizon: 'short' | 'mid' | 'long';
+  category: string;
+  goal: string;
+  kpi: string;
+  target: string;
+  priority: number;
+  notes?: string;
+}
+
+// ─── Brand Persona Draft ──────────────────────────────────────────────────────
+
+export interface BrandPersonaDraft {
+  persona_key: string;
+  label: string;
+  segment_type: string;
+  priority: number;
+  age_range: string;
+  gender: string;
+  location: string;
+  language: string;
+  income_level: string;
+  pain_points: string[];
+  motivations: string[];
+  objections: string[];
+  values: string[];
+  channels: string[];
+  buying_trigger: string;
+  tone_for_segment: string;
+  copy_hooks: string[];
+  avoid: string[];
+  confidence: number;
+  notes?: string;
+}
+
+// ─── GeoMix Draft ─────────────────────────────────────────────────────────────
+
+export interface GeoMixDraft {
+  geo: string;
+  country: string;
+  region: string;
+  city: string;
+  language: string;
+  lighting: string;
+  color_mood: string;
+  aesthetic: string;
+  local_slang: string[];
+  avoid_slang: string[];
+  cultural_refs: string[];
 }
 
 // Phase 4

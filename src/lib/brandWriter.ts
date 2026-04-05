@@ -9,6 +9,9 @@ import type {
   StructuredBrandContext,
   WriteResult,
   TableWriteStatus,
+  BrandGoalDraft,
+  BrandPersonaDraft,
+  GeoMixDraft,
 } from '@/types';
 
 export async function writeBrandToSupabase(
@@ -171,6 +174,94 @@ export async function writeBrandToSupabase(
       status: 'skipped',
       reason: 'No typography suggested',
     });
+  }
+
+
+  // ── 6. brand_goals ──────────────────────────────────────────────────────
+  if (ctx.brand_goals?.length) {
+    try {
+      const rows = ctx.brand_goals.map((g, i) => ({
+        brand_id: brandId,
+        horizon: g.horizon,
+        category: g.category,
+        goal: g.goal,
+        kpi: g.kpi,
+        target: g.target,
+        priority: g.priority ?? i + 1,
+        status: 'active',
+        notes: g.notes ?? null,
+      }));
+      await sbUpsert('brand_goals', rows, 'brand_id,category,goal');
+      results.push({ table: 'brand_goals', rowsUpserted: rows.length, status: 'success' });
+    } catch (e) {
+      results.push({ table: 'brand_goals', rowsUpserted: 0, status: 'error', reason: String(e) });
+    }
+  } else {
+    results.push({ table: 'brand_goals', rowsUpserted: 0, status: 'skipped', reason: 'No goals generated' });
+  }
+
+  // ── 7. brand_personas ─────────────────────────────────────────────────────
+  if (ctx.brand_personas?.length) {
+    try {
+      const rows = ctx.brand_personas.map((p) => ({
+        brand_id: brandId,
+        persona_key: p.persona_key,
+        label: p.label,
+        segment_type: p.segment_type,
+        priority: p.priority,
+        age_range: p.age_range,
+        gender: p.gender,
+        location: p.location,
+        language: p.language,
+        income_level: p.income_level,
+        pain_points: p.pain_points,
+        motivations: p.motivations,
+        objections: p.objections,
+        values: p.values,
+        channels: p.channels,
+        buying_trigger: p.buying_trigger,
+        tone_for_segment: p.tone_for_segment,
+        copy_hooks: p.copy_hooks,
+        avoid: p.avoid,
+        data_source: 'onboarding_ai',
+        confidence: p.confidence ?? 70,
+        active: true,
+        notes: p.notes ?? null,
+      }));
+      await sbUpsert('brand_personas', rows, 'brand_id,persona_key');
+      results.push({ table: 'brand_personas', rowsUpserted: rows.length, status: 'success' });
+    } catch (e) {
+      results.push({ table: 'brand_personas', rowsUpserted: 0, status: 'error', reason: String(e) });
+    }
+  } else {
+    results.push({ table: 'brand_personas', rowsUpserted: 0, status: 'skipped', reason: 'No personas generated' });
+  }
+
+  // ── 8. geomix ─────────────────────────────────────────────────────────────
+  if (ctx.geomix?.length) {
+    try {
+      const rows = ctx.geomix.map((g) => ({
+        brand_id: brandId,
+        geo: g.geo,
+        country: g.country,
+        region: g.region,
+        city: g.city,
+        language: g.language,
+        lighting: g.lighting,
+        color_mood: g.color_mood,
+        aesthetic: g.aesthetic,
+        local_slang: g.local_slang,
+        avoid_slang: g.avoid_slang,
+        cultural_refs: g.cultural_refs,
+        active: true,
+      }));
+      await sbUpsert('geomix', rows, 'brand_id,geo');
+      results.push({ table: 'geomix', rowsUpserted: rows.length, status: 'success' });
+    } catch (e) {
+      results.push({ table: 'geomix', rowsUpserted: 0, status: 'error', reason: String(e) });
+    }
+  } else {
+    results.push({ table: 'geomix', rowsUpserted: 0, status: 'skipped', reason: 'No geomix generated' });
   }
 
   return {
